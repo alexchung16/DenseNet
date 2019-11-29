@@ -22,7 +22,8 @@ class DenseNet121():
     Inception v1
     """
     def __init__(self, input_shape, num_classes, batch_size, num_samples_per_epoch, num_epoch_per_decay,
-                 decay_rate, learning_rate, keep_prob=0.8, weight_decay=1e-4, batch_norm_decay=0.9997,
+                 decay_rate, learning_rate, keep_prob=0.8, weight_decay=1e-4,reduction=0.5, grow_rate=32,
+                     num_filters=64, num_dense_block=4, num_layers=None, batch_norm_decay=0.9997,
                  batch_norm_epsilon=1.1e-5, batch_norm_scale=False, batch_norm_fused=True, is_pretrain=False,
                  reuse=tf.AUTO_REUSE):
         self.num_classes = num_classes
@@ -32,6 +33,11 @@ class DenseNet121():
         self.learning_rate = learning_rate
         self.keep_prob = keep_prob
         self.weight_decay = weight_decay
+        self.num_filters = num_filters
+        self.num_dense_block = num_dense_block
+        self.num_layers = num_layers
+        self.reduction = reduction
+        self.grow_rate = grow_rate
         self.batch_norm_decay = batch_norm_decay
         self.batch_norm_epsilon = batch_norm_epsilon
         self.batch_norm_scale = batch_norm_scale
@@ -58,7 +64,7 @@ class DenseNet121():
         self.accuracy = self.evaluate_batch(self.logits, self.raw_input_label) / batch_size
 
 
-    def inference(self, inputs, scope='InceptionV3'):
+    def inference(self, inputs, scope='densenet121'):
         """
         Inception V3 net structure
         :param inputs:
@@ -67,17 +73,20 @@ class DenseNet121():
         """
         self.prameter = []
         prop = self.densenet(inputs=inputs,
-                                 num_classes=self.num_classes,
-                                 keep_prob=self.keep_prob,
-                                 reuse = self.reuse,
-                                 scope=scope,
-                                 is_training = self.is_training
-                                 )
+                             num_classes=self.num_classes,
+                             keep_prob=self.keep_prob,
+                             reduction=self.reduction,
+                             grow_rate=self.grow_rate,
+                             num_filters=self.num_filters,
+                             num_dense_block=self.num_dense_block,
+                             num_layers=self.num_layers,
+                             reuse = self.reuse,
+                             scope=scope,
+                             is_training = self.is_training)
         return prop
 
     def densenet(self, inputs, scope='densenet121', num_classes=10, keep_prob=0.8, reduction=0.5, grow_rate=32,
-                     num_filters=64, num_dense_block=4, num_layers=None, dropout_rate=0.0, reuse=None,
-                     is_training=False):
+                     num_filters=64, num_dense_block=4, num_layers=None, reuse=None, is_training=False):
         batch_norm_params = {
             'is_training': is_training,
             # Decay for the moving averages.
@@ -113,7 +122,7 @@ class DenseNet121():
                             # final block
                             net, num_filters = self.densenet_base(inputs=inputs, keep_prob=keep_prob,
                                                                       reduction=reduction,  growth_rate=grow_rate,
-                                                                      num_filters=num_filters,
+                                                                      num_filters=num_filters, num_layers=num_layers,
                                                                       num_dense_block=num_dense_block, scope=scope)
                             with tf.compat.v1.variable_scope('final_scope', values=[net]):
                                 net = slim.batch_norm(net)
@@ -122,7 +131,6 @@ class DenseNet121():
                                 net = tf.reduce_mean(input_tensor=net, axis=[1, 2], name='global_avg_pool1')
                                 logit = slim.conv2d(inputs=net, num_outputs=num_classes, kernel_size=(1, 1),
                                                     stride=1, activation_fn=None, normalizer_fn=None, scope='logits')
-
                             prob = slim.softmax(logits=logit, scope='predict')
                             return prob
 
