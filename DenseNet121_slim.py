@@ -52,7 +52,7 @@ class DenseNet121():
         self.raw_input_label = tf.compat.v1.placeholder (tf.float32, shape=[None, self.num_classes], name="class_label")
         self.is_training = tf.compat.v1.placeholder_with_default(input=False, shape=(), name='is_training')
 
-        self.global_step = tf.train.get_or_create_global_step(name='global_step')
+        self.global_step = tf.train.get_or_create_global_step()
         self.epoch_step = tf.Variable(0, trainable=False, name="epoch_step")
 
         # logits
@@ -105,9 +105,9 @@ class DenseNet121():
                 # Set weight_decay for weights in Conv and FC layers.
                 with slim.arg_scope([slim.conv2d],
                                     weights_regularizer=slim.l2_regularizer(self.weight_decay),
-                                    activaton_fn=None,
-                                    biases_regularizer=None,
-                                    batch_norm_params=batch_norm_params):
+                                    activation_fn=None,
+                                    normalizer_fn=None,
+                                    biases_regularizer=None,):
                     with slim.arg_scope([slim.batch_norm],
                                         is_training=is_training,
                                         decay = self.batch_norm_decay,
@@ -128,9 +128,13 @@ class DenseNet121():
                                 net = slim.batch_norm(net)
                                 net = tf.nn.relu(net, name='relu1')
                                 # global_average pool
-                                net = tf.reduce_mean(input_tensor=net, axis=[1, 2], name='global_avg_pool1')
-                                logit = slim.conv2d(inputs=net, num_outputs=num_classes, kernel_size=(1, 1),
-                                                    stride=1, activation_fn=None, normalizer_fn=None, scope='logits')
+                                net = tf.reduce_mean(input_tensor=net, axis=[1, 2], keep_dims=True,
+                                                     name='global_avg_pool1', )
+                            # logits
+                            logit = slim.conv2d(inputs=net, num_outputs=num_classes, kernel_size=(1, 1),
+                                                stride=1, activation_fn=None, normalizer_fn=None, scope='logits')
+                            # squeeze
+                            logit = tf.squeeze(input=logit, axis=[1, 2], name='spatial_squeeze')
                             prob = slim.softmax(logits=logit, scope='predict')
                             return prob
 
@@ -151,12 +155,12 @@ class DenseNet121():
                 # 230 x 230 x 3
                 net = slim.conv2d(inputs=inputs, num_outputs=num_filters, kernel_size=(7, 7), stride=2, scope='conv1',
                                   padding='VALID')
-                net = slim.batch_norm(net)
                 # 112 x 112 x 3
+                net = slim.batch_norm(net)
                 net = tf.nn.relu(features=net, name='relu1')
                 # 112 x 112 x 3
                 # zero padding
-                net = tf.pad(net, paddings=[[0, 0], [2, 2], [2, 2], [0, 0]], name='padding_zeros2')
+                net = tf.pad(net, paddings=[[0, 0], [1, 1], [1, 1], [0, 0]], name='padding_zeros2')
                 # 114 x 114 x 3
                 net = slim.max_pool2d(inputs=net, kernel_size=(3, 3), stride=2, scope='max_pool1', padding='VALID')
                 # 56 x 56 x 3
@@ -192,7 +196,8 @@ class DenseNet121():
                                   padding='VALID')
                 compress_net = slim.dropout(inputs=compress_net, keep_prob=keep_prob)
                 # zero padding
-                compress_net = slim.avg_pool2d(inputs=compress_net, kernel_size=(2, 2), scope=2, name='avgpool1', padding='VALID')
+                compress_net = slim.avg_pool2d(inputs=compress_net, kernel_size=(2, 2), stride=2, scope='avgpool1',
+                                               padding='VALID')
                 return compress_net, compress_filters
 
     def dense_block(self, inputs, num_filters, num_layer, growth_rate, keep_prob=1.0, growth_filters=True, scope=None):
@@ -210,7 +215,7 @@ class DenseNet121():
             concat_net = inputs
             for n in range(num_layer):
                 branch = n + 1
-                net = self.bottleneck_block(inputs=concat_net, num_filters=num_filters, keep_prob=keep_prob,
+                net = self.bottleneck_block(inputs=concat_net, num_filters=growth_rate, keep_prob=keep_prob,
                                             scope='dense_block'+str(branch))
                 concat_net = tf.concat(values=[concat_net, net], axis=3, name='dense_block'+str(branch)+'concat')
                 if growth_filters:
@@ -240,9 +245,9 @@ class DenseNet121():
                 # bottleneck layers
                 net = slim.batch_norm(inputs=inputs)
                 net = tf.nn.relu(net, name='relu2')
-                # zero padding
-                net = tf.pad(net, paddings=[[0, 0], [1, 1], [1, 1], [1, 1]], name='padding_zeros2')
-                net = slim.conv2d(inputs=net, num_outputs=num_filters, kernel_size=(3, 3), stride=1, padding='VALID')
+                # # zero padding
+                # net = tf.pad(net, paddings=[[0, 0], [1, 1], [1, 1], [1, 1]], name='padding_zeros2')
+                net = slim.conv2d(inputs=net, num_outputs=num_filters, kernel_size=(3, 3), stride=1, padding='SAME')
                 net = slim.dropout(inputs=net, keep_prob=keep_prob)
         return net
 
