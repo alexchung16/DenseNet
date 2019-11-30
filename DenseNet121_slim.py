@@ -107,9 +107,9 @@ class DenseNet121():
                                     weights_regularizer=slim.l2_regularizer(self.weight_decay),
                                     activation_fn=None,
                                     normalizer_fn=None,
-                                    biases_regularizer=None,):
+                                    biases_initializer=None,
+                                    ):
                     with slim.arg_scope([slim.batch_norm],
-                                        is_training=is_training,
                                         decay = self.batch_norm_decay,
                                         epsilon = self.batch_norm_epsilon,
                                         updates_collections = tf.GraphKeys.UPDATE_OPS,
@@ -124,7 +124,7 @@ class DenseNet121():
                                                                       reduction=reduction,  growth_rate=grow_rate,
                                                                       num_filters=num_filters, num_layers=num_layers,
                                                                       num_dense_block=num_dense_block, scope=scope)
-                            with tf.compat.v1.variable_scope('final_scope', values=[net]):
+                            with tf.compat.v1.variable_scope('final_block', values=[net]):
                                 net = slim.batch_norm(net)
                                 net = tf.nn.relu(net, name='relu1')
                                 # global_average pool
@@ -132,7 +132,8 @@ class DenseNet121():
                                                      name='global_avg_pool1', )
                             # logits
                             logit = slim.conv2d(inputs=net, num_outputs=num_classes, kernel_size=(1, 1),
-                                                stride=1, activation_fn=None, normalizer_fn=None, scope='logits')
+                                                stride=1, activation_fn=None, normalizer_fn=None,
+                                                biases_initializer=tf.zeros_initializer(),scope='logits')
                             # squeeze
                             logit = tf.squeeze(input=logit, axis=[1, 2], name='spatial_squeeze')
                             prob = slim.softmax(logits=logit, scope='predict')
@@ -216,7 +217,7 @@ class DenseNet121():
             for n in range(num_layer):
                 branch = n + 1
                 net = self.bottleneck_block(inputs=concat_net, num_filters=growth_rate, keep_prob=keep_prob,
-                                            scope='dense_block'+str(branch))
+                                            scope='conv_block'+str(branch))
                 concat_net = tf.concat(values=[concat_net, net], axis=3, name='dense_block'+str(branch)+'concat')
                 if growth_filters:
                     num_filters += growth_rate
@@ -243,7 +244,7 @@ class DenseNet121():
                 net = slim.dropout(inputs=net, keep_prob=keep_prob)
             with tf.compat.v1.variable_scope('x2', default_name='x2', values=[net]):
                 # bottleneck layers
-                net = slim.batch_norm(inputs=inputs)
+                net = slim.batch_norm(inputs=net)
                 net = tf.nn.relu(net, name='relu2')
                 # # zero padding
                 # net = tf.pad(net, paddings=[[0, 0], [1, 1], [1, 1], [1, 1]], name='padding_zeros2')
