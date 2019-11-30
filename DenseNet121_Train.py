@@ -51,7 +51,7 @@ flags.DEFINE_bool('batch_norm_scale', True, 'if True, use gamma for update.')
 flags.DEFINE_bool('batch_norm_fused', True, 'if True, use a faster, fused implementation if possible.')
 
 flags.DEFINE_string('train_dir', record_file, 'Directory to put the training data.')
-flags.DEFINE_bool('is_pretrain', False, 'if True, use pretrain model.')
+flags.DEFINE_bool('is_pretrain', True, 'if True, use pretrain model.')
 flags.DEFINE_string('pretrain_model_dir', pretrain_model, 'pretrain model dir.')
 flags.DEFINE_string('logs_dir', logs_dir, 'direct of summary logs.')
 flags.DEFINE_string('model_name', model_name, 'model_name.')
@@ -160,12 +160,12 @@ if __name__ == "__main__":
         # get model variable of network
         model_variable = tf.model_variables()
         for var in model_variable:
-            print(var.name)
+            print(var.name, var.shape)
 
-        # get and add histogram to summary protocol buffer
-        logit_weight = graph.get_tensor_by_name(name='resnet_v2_50/logits/weights:0')
+        # # get and add histogram to summary protocol buffer
+        logit_weight = graph.get_tensor_by_name(name='densenet121/logits/weights:0')
         tf.summary.histogram(name='logits/weight', values=logit_weight)
-        logit_biase = graph.get_tensor_by_name(name='resnet_v2_50/logits/biases:0')
+        logit_biase = graph.get_tensor_by_name(name='densenet121/logits/biases:0')
         tf.summary.histogram(name='logits/biases', values=logit_biase)
         # merges all summaries collected in the default graph
         summary_op = tf.summary.merge_all()
