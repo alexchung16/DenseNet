@@ -37,7 +37,7 @@ flags.DEFINE_float('decay_rate', 0.99, 'Number of learning decay rate.')
 # flags.DEFINE_bool('global_pool', False, 'if True, use global pool.')
 # flags.DEFINE_bool('spacial_squeeze', True, 'if True, execute squeeze.')
 flags.DEFINE_integer('num_epoch_per_decay', 2, 'Number epoch after each leaning rate decapy.')
-flags.DEFINE_float('keep_prob', 0.8, 'Number of probability that each element is kept.')
+flags.DEFINE_float('keep_prob', 0.5, 'Number of probability that each element is kept.')
 flags.DEFINE_float('weight_decay', 0.0001, 'Number of weight decay with regular')
 
 flags.DEFINE_float('reduction', 0.5, 'Number of reduction of transition block.')
@@ -47,7 +47,7 @@ flags.DEFINE_integer('num_filters', 64, 'Number of initial filters.')
 
 flags.DEFINE_float('batch_norm_decay', 0.997, 'Number of batch norm decay.')
 flags.DEFINE_float('batch_norm_epsilon', 1e-5, 'Number of batch norm epsilon.')
-flags.DEFINE_bool('batch_norm_scale', True, 'if True, use gamma for update.')
+flags.DEFINE_bool('batch_norm_scale', False, 'if True, use gamma for update.')
 flags.DEFINE_bool('batch_norm_fused', True, 'if True, use a faster, fused implementation if possible.')
 
 flags.DEFINE_string('train_dir', record_file, 'Directory to put the training data.')
