@@ -13,7 +13,7 @@ import tensorflow as tf
 from tensorflow.python import pywrap_tensorflow
 
 import numpy as np
-from TFRecordProcessing.parse_TFRecord import reader_tfrecord, get_num_samples
+from DataProcess.read_TFRecord import reader_tfrecord, get_num_samples
 from tensorflow.python.framework import graph_util
 
 
