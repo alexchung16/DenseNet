@@ -44,10 +44,17 @@ class DenseNet121():
         self.batch_norm_fused = batch_norm_fused
         self.is_pretrain = is_pretrain
         self.reuse = reuse
+        self._R_MEAN = 123.68
+        self._G_MEAN = 116.78
+        self._B_MEAN = 103.94
+        self.SCALE_FACTOR=0.017
         # self.initializer = tf.random_normal_initializer(stddev=0.1)
         # add placeholder (X,label)
         self.raw_input_data = tf.compat.v1.placeholder (tf.float32, shape=[None, input_shape[0], input_shape[1], input_shape[2]],
                                                         name="input_images")
+        self.raw_input_data = self.mean_subtraction(image=self.raw_input_data,
+                                                    means=[self._R_MEAN, self._G_MEAN, self._B_MEAN],
+                                                    scale_factor=self.SCALE_FACTOR)
         # y [None,num_classes]
         self.raw_input_label = tf.compat.v1.placeholder (tf.float32, shape=[None, self.num_classes], name="class_label")
         self.is_training = tf.compat.v1.placeholder_with_default(input=False, shape=(), name='is_training')
@@ -313,6 +320,20 @@ class DenseNet121():
         }
         return feed_dict
 
+    def mean_subtraction(self, image, means, scale_factor):
+        """
+        subtract the means form each image channel (white image)
+        :param image:
+        :param mean:
+        :return:
+        """
+        num_channels = image.get_shape()[-1]
+        image = tf.cast(image, dtype=tf.float32)
+        channels = tf.split(value=image, num_or_size_splits=num_channels, axis=3)
+        for n in range(num_channels):
+            channels[n] -= means[n]
+        image = tf.concat(values=channels, axis=3, name='concat_channel')
+        return tf.multiply(image, scale_factor)
 
 
 
