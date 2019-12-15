@@ -52,7 +52,7 @@ class DenseNet121():
         # add placeholder (X,label)
         self.raw_input_data = tf.compat.v1.placeholder (tf.float32, shape=[None, input_shape[0], input_shape[1], input_shape[2]],
                                                         name="input_images")
-        self.raw_input_data = self.mean_subtraction(image=self.raw_input_data,
+        self.raw_input_data = self.mean_subtraction_scale(image=self.raw_input_data,
                                                     means=[self._R_MEAN, self._G_MEAN, self._B_MEAN],
                                                     scale_factor=self.SCALE_FACTOR)
         # y [None,num_classes]
@@ -320,7 +320,7 @@ class DenseNet121():
         }
         return feed_dict
 
-    def mean_subtraction(self, image, means, scale_factor):
+    def mean_subtraction_scale(self, image, means, scale_factor):
         """
         subtract the means form each image channel (white image)
         :param image:
