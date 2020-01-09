@@ -8,7 +8,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from DenseNet.DenseNet121_slim import DenseNet121
+from DenseNet121_Tensorflow.DenseNet121_slim import DenseNet121
 from DataProcess.read_TFRecord import reader_tfrecord, get_num_samples
 from tensorflow.python.framework import graph_util
 #
